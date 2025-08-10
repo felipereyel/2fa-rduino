@@ -3,8 +3,23 @@
         {
             "name": "Mac",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "${userHome}/Library/Arduino15/packages/m5stack/hardware/esp32/3.2.2/cores/esp32/**",
+                "${userHome}/Library/Arduino15/packages/m5stack/hardware/esp32/3.2.2/libraries/**",
+                "${userHome}/Documents/Arduino/libraries/**",
+                "${userHome}/Library/Arduino15/packages/m5stack/tools/**",
+                "${userHome}/Documents/Arduino/libraries/**"
             ],
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/**",
+                    "${userHome}/Library/Arduino15/packages/m5stack/hardware/esp32/3.2.2/cores/esp32/**",
+                    "${userHome}/Library/Arduino15/packages/m5stack/hardware/esp32/3.2.2/libraries/**",
+                    "${userHome}/Documents/Arduino/libraries/**"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            },
             "defines": [],
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c17",
