@@ -1,8 +1,6 @@
-#include "M5AtomS3.h"
+#include "M5Unified.h"
 #include <Preferences.h>
 #include <TOTP-RC6236-generator.hpp>
-#include <USB.h>
-#include <USBHIDKeyboard.h>
 
 #define FONT_SIZE_SMALL 1
 #define FONT_SIZE_MEDIUM 2
@@ -15,7 +13,6 @@
 // Global Variables
 
 u_int32_t last_time = 0;
-USBHIDKeyboard Keyboard;
 
 // Secrets Storage
 
@@ -74,42 +71,42 @@ void put_secret(String raw_secret)
 
 // Grafics
 
-void draw_progress_bar(LovyanGFX *gfx, int current, int total)
+void draw_progress_bar(int current, int total)
 {
-    int width = gfx->width();
-    int height = gfx->height();
+    int width = M5.Display.width();
+    int height = M5.Display.height();
     int bar_height = PROGRESS_BAR_HEIGHT;
     int bar_width = width - 2 * PROGRESS_BAR_MARGIN;
     float progress = (float)current / total;
 
-    int bg_color = gfx->color565(200, 200, 200);
-    int bar_color = gfx->color565(0, 255, 0);
+    int bg_color = M5.Display.color565(200, 200, 200);
+    int bar_color = M5.Display.color565(0, 255, 0);
     if (progress > 0.8)
     {
-        bar_color = gfx->color565(255, 0, 0);
+        bar_color = M5.Display.color565(255, 0, 0);
     }
     else if (progress > 0.5)
     {
-        bar_color = gfx->color565(255, 165, 0);
+        bar_color = M5.Display.color565(255, 165, 0);
     }
 
-    gfx->fillRect(10, height - bar_height - 10, bar_width, bar_height, bg_color);
+    M5.Display.fillRect(10, height - bar_height - 10, bar_width, bar_height, bg_color);
     int filled_width = (current * bar_width) / total;
-    gfx->fillRect(10, height - bar_height - 10, filled_width, bar_height, bar_color);
+    M5.Display.fillRect(10, height - bar_height - 10, filled_width, bar_height, bar_color);
 }
 
 void draw_text_ui()
 {
-    AtomS3.Display.clear();
-    AtomS3.Display.setCursor(0, 0);
+    M5.Display.clear();
+    M5.Display.setCursor(0, 0);
 
-    AtomS3.Display.setTextSize(FONT_SIZE_SMALL);
-    AtomS3.Display.printf("slot %d/%d\n\n", current_index + 1, MAX_KEYS);
+    M5.Display.setTextSize(FONT_SIZE_SMALL);
+    M5.Display.printf("slot %d/%d\n\n", current_index + 1, MAX_KEYS);
 
     auto isEmpty = current_provider.isEmpty() || current_seed.isEmpty();
     auto slotname = isEmpty ? "EMPTY" : current_provider;
-    AtomS3.Display.setTextSize(FONT_SIZE_MEDIUM);
-    AtomS3.Display.printf("%s\n", slotname);
+    M5.Display.setTextSize(FONT_SIZE_MEDIUM);
+    M5.Display.printf("%s\n", slotname);
 }
 
 void draw_totp()
@@ -122,9 +119,9 @@ void draw_totp()
     String *otp = TOTP::currentOTP(current_seed);
     if (otp)
     {
-        AtomS3.Display.setTextSize(FONT_SIZE_LARGE);
-        AtomS3.Display.setCursor(0, 50);
-        AtomS3.Display.printf("%s\n", *otp);
+        M5.Display.setTextSize(FONT_SIZE_LARGE);
+        M5.Display.setCursor(0, 50);
+        M5.Display.printf("%s\n", *otp);
     }
 }
 
@@ -135,20 +132,21 @@ void setup()
     last_time = millis();
     auto cfg = M5.config();
     cfg.serial_baudrate = 115200;
-    AtomS3.begin(cfg);
-    USB.begin();
-    Keyboard.begin();
-    preferences.begin("M5AtomS3", false);
+    M5.begin(cfg);
+    preferences.begin("M5", false);
 
     // Secrets
     current_index = 0;
     sync_index_key_secret();
 
     // Draw initial UI
-    AtomS3.Display.setBrightness(100);
+    M5.Display.init();
+    M5.Display.startWrite();
+    M5.Display.setBrightness(100);
+    M5.Display.fillScreen(TFT_BLACK);
     draw_text_ui();
 
-    Serial.println("M5AtomS3 Initialized");
+    Serial.println("M5 Initialized");
 }
 
 void loop()
@@ -161,7 +159,7 @@ void loop()
         String input = Serial.readStringUntil('\n');
         if (input.startsWith("set "))
         {
-            input.remove(0, 4); // Remove "set "
+            input.remove(0, 4);
             input.trim();
             put_secret(input);
             sync_index_key_secret();
@@ -195,7 +193,6 @@ void loop()
             return;
         }
 
-        Keyboard.print(*otp);
         while (M5.BtnA.isHolding())
         {
             delay(10);
@@ -208,9 +205,10 @@ void loop()
         last_time = time;
         int progress = (time / 1000) % 30;
         draw_totp();
-        draw_progress_bar(&AtomS3.Display, progress, 30);
+        draw_progress_bar(progress, 30);
     }
 
-    delay(10);
+    M5.delay(10);
     M5.update();
+    M5.Display.endWrite();
 }
