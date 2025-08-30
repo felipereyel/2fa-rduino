@@ -1,4 +1,5 @@
 #include "M5Unified.h"
+#include <BleKeyboard.h>
 #include <Preferences.h>
 #include <TOTP-RC6236-generator.hpp>
 
@@ -18,10 +19,12 @@
 time_t ltime = 0;
 time_t time_delta;
 
+BleKeyboard bleKeyboard("2FArduino", "2FArduino", 100);
+
 Preferences preferences;
 String current_provider;
 String current_seed;
-u8_t current_index;
+u_int8_t current_index;
 
 //// computed
 String current_key;
@@ -153,10 +156,15 @@ void draw_text_ui()
 
 void setup()
 {
-    ltime = now();
+    // M5
     auto cfg = M5.config();
     cfg.serial_baudrate = 115200;
     M5.begin(cfg);
+
+    // BLE
+    bleKeyboard.begin();
+
+    // Storage
     preferences.begin("M5", false);
 
     // Secrets
@@ -169,7 +177,9 @@ void setup()
     M5.Display.fillScreen(TFT_BLACK);
     draw_text_ui();
 
+    // Done
     Serial.println("M5 Initialized");
+    ltime = now();
 }
 
 void loop()
@@ -215,6 +225,11 @@ void loop()
         if (current_totp.isEmpty())
         {
             return;
+        }
+
+        if (bleKeyboard.isConnected())
+        {
+            bleKeyboard.print(current_totp.c_str());
         }
 
         Serial.printf("%s: %s\n", current_provider.c_str(), current_totp.c_str());
